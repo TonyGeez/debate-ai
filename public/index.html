@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Group Chat</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-navbar">
+        <div class="nav-content">
+            <button class="menu-toggle" id="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="nav-title">
+                <i class="fas fa-comments"></i>
+                <span>AI Group Chat</span>
+            </div>
+            <div class="nav-actions">
+                <button id="start-btn" class="nav-btn success" style="display: none;">
+                    <i class="fas fa-play"></i> <span class="btn-text">Start</span>
+                </button>
+                <button id="stop-btn" class="nav-btn danger" style="display: none;">
+                    <i class="fas fa-stop"></i> <span class="btn-text">Stop</span>
+                </button>
+                <button id="leave-btn" class="nav-btn secondary" style="display: none;">
+                    <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Leave</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-history"></i> Conversations</h2>
+                <button id="new-conversation-btn" class="btn-new">
+                    <i class="fas fa-plus"></i> New
+                </button>
+            </div>
+            <div class="conversations-list" id="conversations-list">
+                <!-- Conversations will be loaded here -->
+            </div>
+        </aside>
+
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="welcome-screen">
+                <div class="welcome-content">
+                    <div class="welcome-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h1>AI Group Conversations</h1>
+                    <p>Create engaging discussions with multiple AI personalities. Watch them debate, collaborate, and explore ideas together.</p>
+                    <button id="welcome-new-btn" class="btn-large">
+                        <i class="fas fa-plus-circle"></i> Create New Conversation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Interface -->
+            <div id="chat-interface" class="chat-interface" style="display: none;">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-info">
+                        <h3 id="chat-title">Conversation Title</h3>
+                        <p id="chat-topic">Topic: Discussion topic here</p>
+                    </div>
+                    <div class="chat-stats">
+                        <span id="participant-count"><i class="fas fa-users"></i> 0 participants</span>
+                        <span id="message-counter"><i class="fas fa-comment-dots"></i> 0/0 messages</span>
+                    </div>
+                </div>
+
+                <!-- Participants Bar -->
+                <div class="participants-bar" id="participants-bar">
+                    <!-- Participants will be loaded here -->
+                </div>
+
+                <!-- Messages Area -->
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Messages will appear here -->
+                </div>
+
+                <!-- AI Status -->
+                <div id="ai-status" class="ai-status"></div>
+
+                <!-- Input Area -->
+                <div class="chat-input-container">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="message-input" 
+                            placeholder="Type your message..." 
+                            rows="1"
+                            disabled
+                        ></textarea>
+                        <button id="send-btn" class="btn-send" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Setup Modal (Custom, not Bootstrap) -->
+    <div class="custom-modal" id="setup-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-container">
+            <div class="modal-content-wrapper">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle"></i> Create New Conversation
+                    </h5>
+                    <button type="button" class="btn-close" id="close-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-section">
+                        <label for="conversation-title">
+                            <i class="fas fa-heading"></i> Title
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="conversation-title" 
+                            placeholder="e.g., AI Ethics Discussion"
+                            required
+                        >
+                    </div>
+                    
+                    <div class="form-section">
+                        <label for="conversation-topic">
+                            <i class="fas fa-lightbulb"></i> Topic
+                        </label>
+                        <textarea 
+                            id="conversation-topic" 
+                            class="form-control" 
+                            rows="3" 
+                            placeholder="What should the AIs discuss? Be specific..."
+                            required
+                        ></textarea>
+                    </div>
+                    
+                    <div class="form-section">
+                        <label for="message-limit">
+                            <i class="fas fa-hashtag"></i> Message Limit
+                        </label>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            id="message-limit" 
+                            min="0" 
+                            value="20"
+                        >
+                        <small class="form-text">Set to 0 for unlimited messages</small>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-header">
+                            <label>
+                                <i class="fas fa-users"></i> AI Participants
+                            </label>
+                            <button type="button" id="add-participant-btn" class="btn-add-participant">
+                                <i class="fas fa-plus"></i> Add Participant
+                            </button>
+                        </div>
+                        <div id="participants-container">
+                            <!-- Participant cards will be added here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-btn" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button id="create-conversation-btn" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Create Conversation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification-toast">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span id="notification-message"></span>
+        </div>
+        <button id="notification-close" class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+</body>
+</html>
