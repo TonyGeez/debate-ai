@@ -3,11 +3,19 @@ const path = require('path');
 
 class Logger {
   constructor() {
-    this.logFile = path.join(__dirname, 'logs.txt');
+    this.logFile = path.join(__dirname, 'logs/logs.txt');
     this.ensureLogFileExists();
   }
 
   ensureLogFileExists() {
+    const logDir = path.dirname(this.logFile);
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    
+    // Create file if it doesn't exist
     if (!fs.existsSync(this.logFile)) {
       fs.writeFileSync(this.logFile, '');
     }
