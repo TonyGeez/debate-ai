@@ -130,7 +130,7 @@ Contributions are welcome to help improve the AI Group Chat platform. Please fee
 # Todo 
 
 ## Essential Features
-- [ ] Delete chat from sidebar
+- [x] Delete chat from sidebar
 - [ ] Edit chat settings (max message, title, topic)
 - [ ] Rename conversation
 - [ ] Export conversation (JSON, Markdown, PDF)
